@@ -10,6 +10,7 @@ import { buildAtlasPlan } from "@/lib/build-atlas-plan";
 import { normalizeAtlasPlan } from "@/lib/normalize-atlas-plan";
 
 export const runtime = "nodejs";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 
 function getClient() {
   return new OpenAI({
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     }
 
     const response = await getClient().responses.parse({
-      model: "gpt-5",
+      model: OPENAI_MODEL,
       reasoning: { effort: "low" },
       input: [
         {
@@ -99,7 +100,10 @@ export async function POST(request: Request) {
       })
     );
   } catch (error) {
-    console.error("Atlas plan route failed:", error);
+    console.error("Atlas plan route failed:", {
+      model: OPENAI_MODEL,
+      error
+    });
 
     if (input) {
       const fallbackPlan = normalizeAtlasPlan(buildAtlasPlan(input), input);

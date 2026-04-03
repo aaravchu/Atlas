@@ -1,11 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import type { AtlasPlanResponse } from "@/lib/atlas-plan-schema";
-import { buildCalendarFile, buildTimeblocks, getCalendarFilename } from "@/lib/timeblocks";
+import {
+  buildCalendarFileFromDrafts,
+  getCalendarFilename,
+  materializeTimeblocks,
+  type TimeblockDraft
+} from "@/lib/timeblocks";
 
 type TimeblocksPanelProps = {
-  plan: AtlasPlanResponse;
+  drafts: TimeblockDraft[];
+  onDraftChange: (index: number, patch: Partial<TimeblockDraft>) => void;
 };
 
 function formatTime(date: Date) {
@@ -15,11 +20,11 @@ function formatTime(date: Date) {
   }).format(date);
 }
 
-export function TimeblocksPanel({ plan }: TimeblocksPanelProps) {
-  const blocks = useMemo(() => buildTimeblocks(plan), [plan]);
+export function TimeblocksPanel({ drafts, onDraftChange }: TimeblocksPanelProps) {
+  const blocks = useMemo(() => materializeTimeblocks(drafts), [drafts]);
 
   const downloadCalendar = () => {
-    const file = buildCalendarFile(plan);
+    const file = buildCalendarFileFromDrafts(drafts);
     const blob = new Blob([file], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -42,7 +47,7 @@ export function TimeblocksPanel({ plan }: TimeblocksPanelProps) {
           </h2>
           <p className="mt-3 font-sans text-sm leading-6 text-[var(--muted)]">
             Atlas groups your focus task and top execution blocks into a schedule you can actually
-            put on your calendar.
+            put on your calendar. Adjust the block names or lengths before you export.
           </p>
         </div>
 
@@ -70,15 +75,48 @@ export function TimeblocksPanel({ plan }: TimeblocksPanelProps) {
                       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--accent-soft)] font-sans text-xs font-semibold text-[var(--accent)]">
                         {index + 1}
                       </span>
-                      <h3 className="text-lg leading-tight">{block.title}</h3>
+                      <input
+                        className="min-w-0 flex-1 rounded-[14px] border border-transparent bg-[#f7f4ee] px-3 py-2 text-lg leading-tight text-[var(--text)] outline-none transition focus:border-[var(--accent)] focus:bg-white"
+                        type="text"
+                        value={drafts[index]?.title ?? block.title}
+                        onChange={(event) =>
+                          onDraftChange(index, { title: event.target.value.slice(0, 120) })
+                        }
+                      />
                     </div>
-                    <p className="mt-2 font-sans text-sm leading-6 text-[var(--muted)]">
-                      {block.note}
-                    </p>
+                    <textarea
+                      className="mt-3 min-h-20 w-full resize-none rounded-[14px] border border-transparent bg-[#f7f4ee] px-3 py-3 font-sans text-sm leading-6 text-[var(--muted)] outline-none transition focus:border-[var(--accent)] focus:bg-white"
+                      value={drafts[index]?.note ?? block.note}
+                      onChange={(event) =>
+                        onDraftChange(index, { note: event.target.value.slice(0, 180) })
+                      }
+                    />
                   </div>
                   <span className="rounded-full border border-[var(--border)] px-3 py-1 font-sans text-xs text-[var(--muted)]">
                     {block.source}
                   </span>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <label className="font-sans text-xs uppercase tracking-[0.18em] text-[var(--muted)]">
+                    Duration
+                  </label>
+                  <input
+                    className="w-24 rounded-full border border-[var(--border)] bg-white px-3 py-2 font-sans text-sm text-[var(--text)] outline-none transition focus:border-[var(--accent)]"
+                    type="number"
+                    min={15}
+                    max={180}
+                    step={15}
+                    value={drafts[index]?.durationMinutes ?? 45}
+                    onChange={(event) =>
+                      onDraftChange(index, {
+                        durationMinutes: Math.max(
+                          15,
+                          Math.min(180, Number(event.target.value) || drafts[index]?.durationMinutes || 45)
+                        )
+                      })
+                    }
+                  />
+                  <span className="font-sans text-sm text-[var(--muted)]">minutes</span>
                 </div>
                 <p className="mt-3 font-sans text-sm font-medium text-[var(--text)]">
                   {formatTime(block.start)} - {formatTime(block.end)}

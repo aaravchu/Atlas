@@ -8,6 +8,13 @@ export type Timeblock = {
   note: string;
 };
 
+export type TimeblockDraft = {
+  durationMinutes: number;
+  note: string;
+  source: "focus" | "today";
+  title: string;
+};
+
 function roundToNextHalfHour(date: Date) {
   const next = new Date(date);
   next.setSeconds(0, 0);
@@ -63,42 +70,49 @@ function escapeIcs(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 }
 
-export function buildTimeblocks(plan: AtlasPlanResponse, now = new Date()) {
+export function buildTimeblockDrafts(plan: AtlasPlanResponse): TimeblockDraft[] {
+  return [
+    {
+      title: plan.focusTask.title,
+      durationMinutes: Math.min(Math.max(plan.focusTask.estimatedMinutes, 20), 120),
+      source: "focus",
+      note: plan.focusTask.whyNow
+    },
+    ...plan.today.slice(0, 3).map((item) => ({
+      title: item.title,
+      durationMinutes: parseDurationToMinutes(item.duration),
+      source: "today" as const,
+      note: `Energy: ${item.energy}`
+    }))
+  ];
+}
+
+export function materializeTimeblocks(drafts: TimeblockDraft[], now = new Date()) {
   const start = getStartingPoint(now);
   const blocks: Timeblock[] = [];
   let cursor = start;
 
-  const focusBlockDuration = Math.min(Math.max(plan.focusTask.estimatedMinutes, 20), 120);
-
-  blocks.push({
-    title: plan.focusTask.title,
-    start: cursor,
-    end: addMinutes(cursor, focusBlockDuration),
-    source: "focus",
-    note: plan.focusTask.whyNow
-  });
-
-  cursor = addMinutes(cursor, focusBlockDuration + 10);
-
-  plan.today.slice(0, 3).forEach((item) => {
-    const duration = parseDurationToMinutes(item.duration);
-
+  drafts.forEach((draft) => {
+    const duration = Math.min(Math.max(draft.durationMinutes, 15), 180);
     blocks.push({
-      title: item.title,
+      title: draft.title,
       start: cursor,
       end: addMinutes(cursor, duration),
-      source: "today",
-      note: `Energy: ${item.energy}`
+      source: draft.source,
+      note: draft.note
     });
-
     cursor = addMinutes(cursor, duration + 10);
   });
 
   return blocks;
 }
 
-export function buildCalendarFile(plan: AtlasPlanResponse, now = new Date()) {
-  const blocks = buildTimeblocks(plan, now);
+export function buildTimeblocks(plan: AtlasPlanResponse, now = new Date()) {
+  return materializeTimeblocks(buildTimeblockDrafts(plan), now);
+}
+
+export function buildCalendarFileFromDrafts(drafts: TimeblockDraft[], now = new Date()) {
+  const blocks = materializeTimeblocks(drafts, now);
   const stamp = formatIcsDate(new Date());
   const body = blocks
     .map((block, index) => {
@@ -123,6 +137,10 @@ export function buildCalendarFile(plan: AtlasPlanResponse, now = new Date()) {
     body,
     "END:VCALENDAR"
   ].join("\n");
+}
+
+export function buildCalendarFile(plan: AtlasPlanResponse, now = new Date()) {
+  return buildCalendarFileFromDrafts(buildTimeblockDrafts(plan), now);
 }
 
 export function getCalendarFilename(now = new Date()) {

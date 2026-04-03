@@ -2,9 +2,10 @@ import type { AtlasPlanResponse } from "@/lib/atlas-plan-schema";
 
 type DashboardViewProps = {
   plan: AtlasPlanResponse;
+  onPriorityChange?: (index: number, field: "reason" | "title", value: string) => void;
 };
 
-export function DashboardView({ plan }: DashboardViewProps) {
+export function DashboardView({ onPriorityChange, plan }: DashboardViewProps) {
   return (
     <section className="glass-card rounded-[30px] p-6 sm:p-8">
       <div
@@ -43,14 +44,35 @@ export function DashboardView({ plan }: DashboardViewProps) {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-[1.35rem] leading-tight text-balance">{task.title}</h3>
+                      {onPriorityChange ? (
+                        <input
+                          className="min-w-0 flex-1 rounded-[16px] border border-transparent bg-[#f7f4ee] px-3 py-2 text-[1.2rem] leading-tight text-balance text-[var(--text)] outline-none transition focus:border-[var(--accent)] focus:bg-white"
+                          type="text"
+                          value={task.title}
+                          onChange={(event) =>
+                            onPriorityChange(index, "title", event.target.value.slice(0, 120))
+                          }
+                        />
+                      ) : (
+                        <h3 className="text-[1.35rem] leading-tight text-balance">{task.title}</h3>
+                      )}
                       <span className="rounded-full border border-[var(--border)] px-2 py-1 font-sans text-xs text-[var(--muted)]">
                         {task.urgency} urgency
                       </span>
                     </div>
-                    <p className="mt-2 font-sans text-sm leading-6 text-[var(--muted)]">
-                      {task.reason}
-                    </p>
+                    {onPriorityChange ? (
+                      <textarea
+                        className="mt-3 min-h-24 w-full resize-none rounded-[16px] border border-transparent bg-[#f7f4ee] px-3 py-3 font-sans text-sm leading-6 text-[var(--muted)] outline-none transition focus:border-[var(--accent)] focus:bg-white"
+                        value={task.reason}
+                        onChange={(event) =>
+                          onPriorityChange(index, "reason", event.target.value.slice(0, 180))
+                        }
+                      />
+                    ) : (
+                      <p className="mt-2 font-sans text-sm leading-6 text-[var(--muted)]">
+                        {task.reason}
+                      </p>
+                    )}
                   </div>
                 </div>
               </article>
