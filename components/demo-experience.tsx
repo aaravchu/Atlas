@@ -6,6 +6,7 @@ import { FocusMode } from "@/components/focus-mode";
 import { HeroComposer } from "@/components/hero-composer";
 import { LoadingState } from "@/components/loading-state";
 import { PlanMetaBanner } from "@/components/plan-meta-banner";
+import { TimeblocksPanel } from "@/components/timeblocks-panel";
 import type { AtlasPlanResponse } from "@/lib/atlas-plan-schema";
 
 const defaultPrompt =
@@ -90,6 +91,7 @@ export function DemoExperience({ embedded = false }: { embedded?: boolean }) {
               <DashboardView plan={plan} />
               <FocusMode plan={plan} />
             </div>
+            <TimeblocksPanel plan={plan} />
           </div>
         ) : null}
       </div>

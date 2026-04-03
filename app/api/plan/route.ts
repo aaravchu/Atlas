@@ -9,6 +9,8 @@ import {
 import { buildAtlasPlan } from "@/lib/build-atlas-plan";
 import { normalizeAtlasPlan } from "@/lib/normalize-atlas-plan";
 
+export const runtime = "nodejs";
+
 function getClient() {
   return new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -39,9 +41,11 @@ User input:
 }
 
 export async function POST(request: Request) {
+  let input = "";
+
   try {
     const body = (await request.json()) as { input?: string };
-    const input = body.input?.trim();
+    input = body.input?.trim() ?? "";
 
     if (!input) {
       return NextResponse.json(
@@ -97,25 +101,18 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Atlas plan route failed:", error);
 
-    try {
-      const body = (await request.clone().json()) as { input?: string };
-      const input = body.input?.trim();
+    if (input) {
+      const fallbackPlan = normalizeAtlasPlan(buildAtlasPlan(input), input);
 
-      if (input) {
-        const fallbackPlan = normalizeAtlasPlan(buildAtlasPlan(input), input);
-
-        return NextResponse.json(
-          AtlasPlanResponseSchema.parse({
-            ...fallbackPlan,
-            meta: {
-              mode: "fallback",
-              warning: "Live planning was unavailable. Showing fallback plan."
-            }
-          })
-        );
-      }
-    } catch {
-      // no-op
+      return NextResponse.json(
+        AtlasPlanResponseSchema.parse({
+          ...fallbackPlan,
+          meta: {
+            mode: "fallback",
+            warning: "Live planning was unavailable. Showing fallback plan."
+          }
+        })
+      );
     }
 
     return NextResponse.json(
