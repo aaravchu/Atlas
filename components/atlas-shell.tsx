@@ -6,7 +6,7 @@ type AtlasShellProps = {
 };
 
 const steps = [
-  { id: "intake", label: "Capture", href: "/" },
+  { id: "intake", label: "Capture", href: "/start" },
   { id: "questions", label: "Clarify", href: "/questions" },
   { id: "plan", label: "Plan", href: "/plan" },
   { id: "calendar", label: "Timeblock", href: "/calendar" }

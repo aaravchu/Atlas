@@ -24,7 +24,7 @@ export function QuestionsPage() {
     const session = readAtlasSession();
 
     if (!session.input) {
-      router.replace("/");
+      router.replace("/start");
       return;
     }
 
@@ -97,7 +97,7 @@ export function QuestionsPage() {
               [id]: value
             }))
           }
-          onBack={() => router.push("/")}
+          onBack={() => router.push("/start")}
           onContinue={continueToPlan}
         />
       ) : null}

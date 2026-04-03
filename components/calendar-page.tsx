@@ -17,7 +17,7 @@ export function CalendarPage() {
     const session = readAtlasSession();
 
     if (!session.plan) {
-      router.replace("/");
+      router.replace("/start");
       return;
     }
 

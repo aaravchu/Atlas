@@ -19,7 +19,7 @@ export function PlanPage() {
     const session = readAtlasSession();
 
     if (!session.plan) {
-      router.replace("/");
+      router.replace("/start");
       return;
     }
 
